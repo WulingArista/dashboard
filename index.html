@@ -272,6 +272,7 @@ let namaDealer = '';
 
       // Update tampilan header
       document.getElementById('tvTitle').textContent = namaDealer.toUpperCase();
+      if (dealer.logo) document.getElementById('logoWuling').src = dealer.logo;
       document.title = 'Dashboard TV - ' + namaDealer;
       document.getElementById('loading-text').textContent = 'Memuat data ' + namaDealer + '...';
 
