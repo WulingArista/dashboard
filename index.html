@@ -1,7 +1,37 @@
 <!DOCTYPE html>
 <html>
 <head>
-<link rel="manifest" href="manifest.json">
+<script>
+(function() {
+  const params  = new URLSearchParams(window.location.search);
+  const dealer  = (params.get('dealer') || '').toUpperCase().trim();
+  const baseUrl = window.location.origin + window.location.pathname;
+  const startUrl = dealer ? baseUrl + '?dealer=' + dealer : baseUrl;
+
+  const manifest = {
+    name            : 'Dashboard Wuling',
+    short_name      : 'Dashboard',
+    description     : 'Appointment Control Board Wuling',
+    start_url       : startUrl,
+    display         : 'standalone',
+    background_color: '#020617',
+    theme_color     : '#d71920',
+    orientation     : 'landscape',
+    icons: [
+      { src: 'icon-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+      { src: 'icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+    ]
+  };
+
+  const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const link = document.createElement('link');
+  link.rel   = 'manifest';
+  link.href  = url;
+  document.head.appendChild(link);
+})();
+</script>
+<link rel="apple-touch-icon" href="icon-192x192.png">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dashboard TV</title>
