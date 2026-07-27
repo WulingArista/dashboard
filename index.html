@@ -8,6 +8,10 @@
   const baseUrl = window.location.origin + window.location.pathname;
   const startUrl = dealer ? baseUrl + '?dealer=' + dealer : baseUrl;
 
+  // hitung folder saat ini supaya icon path jadi absolute, bukan relatif ke blob
+  const dirUrl = window.location.origin +
+    window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+
   const manifest = {
     name            : 'Dashboard Wuling',
     short_name      : 'Dashboard',
