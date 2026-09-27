@@ -1,49 +1,15 @@
 <!DOCTYPE html>
 <html>
 <head>
-<script>
-(function() {
-  const params  = new URLSearchParams(window.location.search);
-  const dealer  = (params.get('dealer') || '').toUpperCase().trim();
-  const baseUrl = window.location.origin + window.location.pathname;
-  const startUrl = dealer ? baseUrl + '?dealer=' + dealer : baseUrl;
-
-  // hitung folder saat ini supaya icon path jadi absolute, bukan relatif ke blob
-  const dirUrl = window.location.origin +
-    window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
-
-  const manifest = {
-    name            : 'Dashboard Wuling',
-    short_name      : 'Dashboard',
-    description     : 'Appointment Control Board Wuling',
-    start_url       : startUrl,
-    display         : 'standalone',
-    background_color: '#020617',
-    theme_color     : '#d71920',
-    orientation     : 'landscape',
-    icons: [
-      { src: dirUrl + 'icon-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
-      { src: dirUrl + 'icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
-    ]
-  };
-
-  const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-  const url  = URL.createObjectURL(blob);
-  const link = document.createElement('link');
-  link.rel   = 'manifest';
-  link.href  = url;
-  document.head.appendChild(link);
-})();
-</script>
-<link rel="apple-touch-icon" href="icon-192x192.png">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dashboard TV</title>
+
+<link rel="manifest" href="manifest.json?v=2">
 <meta name="theme-color" content="#d71920">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192x192.png">
 
 <style>
+/* KUNCI UTAMA: BODY MENAHAN WRAPPER TV AGAR BISA DIPUTAR */
 body { 
   margin:0; 
   background:#020617; 
@@ -56,6 +22,7 @@ body {
   font-family:'Segoe UI',Arial; 
 }
 
+/* TV WRAPPER: Komponen ini yang akan diputar 90 derajat */
 #tv-wrapper {
   width: 100vw;
   height: 100vh;
@@ -68,31 +35,7 @@ body {
   overflow: hidden;
 }
 
-/* Loading & Error Screen */
-#layar-loading {
-  position: fixed; top:0; left:0; width:100%; height:100%;
-  background:#020617; z-index:99999;
-  display:flex; flex-direction:column;
-  align-items:center; justify-content:center;
-  color:white; font-family:'Segoe UI',Arial;
-  transition: opacity 0.5s ease;
-}
-#layar-error {
-  position: fixed; top:0; left:0; width:100%; height:100%;
-  background:#020617; z-index:99998;
-  display:none; flex-direction:column;
-  align-items:center; justify-content:center;
-  color:white; font-family:'Segoe UI',Arial;
-  text-align:center; padding:30px; box-sizing:border-box;
-}
-.spinner {
-  border: 4px solid rgba(215,25,32,0.3);
-  border-top: 4px solid #d71920;
-  border-radius: 50%; width:50px; height:50px;
-  animation: spin 1s linear infinite; margin-bottom:20px;
-}
-@keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
-
+/* Komponen atas & bawah dibuat tidak boleh menyusut (flex-shrink: 0) */
 .header{ padding:18px 30px; display:flex; justify-content:space-between; align-items:center; background:linear-gradient(135deg,#d71920,#7f0000); box-shadow:0 0 40px rgba(215,25,32,.8); flex-shrink: 0; }
 .headerLeft{ display:flex; align-items:center; gap:18px; }
 .logoWuling{ height:55px; max-width:140px; object-fit:contain; animation:logoPulse 3s ease-in-out infinite; }
@@ -100,12 +43,14 @@ body {
 .title{ font-size:34px; font-weight:700; letter-spacing:1px; text-transform:uppercase; margin:0; line-height: 1.1; }
 .subtitle{ font-size:14px; letter-spacing:2px; opacity:.85; transition: color 0.3s; }
 
+/* KONTROL WAKTU & TOMBOL */
 .timeBox{ display:flex; flex-direction:column; align-items:flex-end; }
 .action-btns { display: flex; gap: 8px; margin-bottom: 8px; justify-content: flex-end; }
 .time-texts { display: flex; flex-direction: column; align-items: flex-end; }
 #tanggal{ font-size:16px; opacity:.9; }
 #jam{ font-size:24px; font-weight:bold; }
 
+/* TOMBOL AKSI */
 #btnBesok { background: #f59e0b; color: #111; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 900; cursor: pointer; font-size: 13px; transition: all 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
 #btnBesok:hover { transform: translateY(-2px); filter: brightness(1.1); }
 #btnRotate { background: #475569; color: #fff; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 900; cursor: pointer; font-size: 13px; transition: all 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
@@ -115,6 +60,7 @@ body {
 .card{ background:rgba(255,255,255,.05); backdrop-filter:blur(12px); border-radius:16px; padding:15px; text-align:center; }
 .card h2{ margin:0; font-size:32px; }
 
+/* KUNCI TABEL: Dibuat Flex-Grow agar elastis mengisi sisa ruang */
 .tableWrap{ flex-grow: 1; margin:0 25px 40px 25px; border-radius:16px; overflow:hidden; min-height: 0; position: relative; }
 #tableScroll{ height:100%; overflow-y:auto; transform: translateZ(0); backface-visibility: hidden; will-change: scroll-position; -webkit-overflow-scrolling: touch; }
 #tableScroll::-webkit-scrollbar { width: 6px; }
@@ -125,9 +71,9 @@ table{ width:100%; border-collapse:collapse; table-layout:auto; font-size:15px; 
 th,td{ padding:9px 10px; text-align:left; }
 thead th{ position:sticky; top:0; background:#111827; z-index:5; }
 td{ border-bottom:1px solid #1f2937; white-space:normal; overflow:visible; text-overflow:clip; word-break:break-word; overflow-wrap:anywhere; line-height:1.35; vertical-align:top; }
-tbody tr:nth-child(even) { background-color: rgba(255,255,255,0.09); }
+tbody tr:nth-child(even) { background-color: rgba(255, 255, 255, 0.09); }
 tbody tr:nth-child(odd) { background-color: transparent; }
-tbody tr:hover { background-color: rgba(255,255,255,0.15); }
+tbody tr:hover { background-color: rgba(255, 255, 255, 0.15); }
 
 .status{ padding:6px 12px; border-radius:999px; font-weight:bold; display:inline-block; }
 .PENDING{ background:#f59e0b; color:#111; } .CONFIRM{ background:#2563eb; } .CHECK\.IN{ background:#7c3aed; }
@@ -137,11 +83,15 @@ tbody tr:hover { background-color: rgba(255,255,255,0.15); }
 .newRow{ background:#022c22!important; }
 .empty{ text-align:center; color:#94a3b8; font-size:22px; padding:30px; }
 
+/* MARQUEE TEKS BERJALAN */
 .marquee{ position:absolute; bottom:0; width:100%; height:40px; background:#020617; overflow:hidden; display:flex; align-items:center; }
 .track{ display:flex; white-space:nowrap; animation:marqueeMove 25s linear infinite; }
 .track span{ padding-right:60px; background:linear-gradient(90deg,#22c55e,#4ade80,#22c55e); -webkit-background-clip:text; -webkit-text-fill-color:transparent; font-weight:700; }
 @keyframes marqueeMove{ from{transform:translateX(0)} to{transform:translateX(-50%)} }
 
+/* =========================================================
+   STYLE UNTUK MODE PORTRAIT (HP AUTO & MANUAL ROTATE TV)
+   ========================================================= */
 @media screen and (orientation: portrait) {
   .header { padding: 12px 16px; flex-direction: column; align-items: flex-start; gap: 10px; }
   .title { font-size: 24px!important; }
@@ -151,7 +101,7 @@ tbody tr:hover { background-color: rgba(255,255,255,0.15); }
   .action-btns { flex-direction: column; gap: 5px; margin-bottom: 0; }
   .time-texts { align-items: flex-start; }
   #jam { font-size: 20px!important; }
-  .cards { grid-template-columns: repeat(2,1fr)!important; gap: 8px!important; padding: 10px!important; }
+  .cards { grid-template-columns: repeat(2, 1fr)!important; gap: 8px!important; padding: 10px!important; }
   .card { padding: 10px!important; border-radius: 12px!important; }
   .card h2 { font-size: 22px!important; }
   .tableWrap { margin: 0 10px 32px 10px !important; }
@@ -162,6 +112,7 @@ tbody tr:hover { background-color: rgba(255,255,255,0.15); }
   .marquee { height: 32px!important; }
 }
 
+/* KELAS PAKSAAN (FORCE PORTRAIT) UNTUK TOMBOL ROTATE MANUAL */
 .is-portrait .header { padding: 12px 16px; flex-direction: column; align-items: flex-start; gap: 10px; }
 .is-portrait .title { font-size: 24px!important; }
 .is-portrait .subtitle { font-size: 11px!important; letter-spacing: 1px!important; }
@@ -170,7 +121,7 @@ tbody tr:hover { background-color: rgba(255,255,255,0.15); }
 .is-portrait .action-btns { flex-direction: column; gap: 5px; margin-bottom: 0; }
 .is-portrait .time-texts { align-items: flex-start; }
 .is-portrait #jam { font-size: 20px!important; }
-.is-portrait .cards { grid-template-columns: repeat(2,1fr)!important; gap: 8px!important; padding: 10px!important; }
+.is-portrait .cards { grid-template-columns: repeat(2, 1fr)!important; gap: 8px!important; padding: 10px!important; }
 .is-portrait .card { padding: 10px!important; border-radius: 12px!important; }
 .is-portrait .card h2 { font-size: 22px!important; }
 .is-portrait .tableWrap { margin: 0 10px 32px 10px !important; }
@@ -180,6 +131,7 @@ tbody tr:hover { background-color: rgba(255,255,255,0.15); }
 .is-portrait .status { font-size: 11px!important; padding: 4px 8px!important; }
 .is-portrait .marquee { height: 32px!important; }
 
+/* --- RESPONSIVE KHUSUS HP MENDATAR (LANDSCAPE KECIL) --- */
 @media(max-height: 500px) {
   .header { padding: 6px 15px; }
   .logoWuling { height: 30px; }
@@ -200,33 +152,15 @@ tbody tr:hover { background-color: rgba(255,255,255,0.15); }
 </head>
 <body>
 
-<!-- Loading Screen -->
-<div id="layar-loading">
-  <div class="spinner"></div>
-  <p id="loading-text" style="font-weight:bold; letter-spacing:1px;">Menyiapkan Dashboard...</p>
-</div>
-
-<!-- Error Screen -->
-<div id="layar-error">
-  <div style="font-size:56px; margin-bottom:16px;">⚠️</div>
-  <div style="font-size:24px; font-weight:700; margin-bottom:8px;">Kode Dealer Tidak Valid</div>
-  <div style="font-size:14px; color:#94a3b8; line-height:1.6;">
-    Pastikan URL yang digunakan sudah benar.<br>
-    Contoh: <code style="color:#f97316;">?dealer=LPG</code>
-  </div>
-  <div id="error-kode" style="margin-top:20px; background:#0f172a; padding:12px 20px; border-radius:10px; font-size:18px; font-weight:700; color:#f97316; letter-spacing:2px;">Kode: -</div>
-</div>
-
-<!-- Main Dashboard -->
-<div id="tv-wrapper" style="display:none;">
+<div id="tv-wrapper">
 
   <div class="header">
     <div class="headerLeft">
       <div>
-        <img class="logoWuling" id="logoWuling" src="logo-header.png" alt="Wuling" onerror="this.style.display='none'">
+        <img class="logoWuling" id="logoWuling" src="logo-header.png" alt="Wuling">
       </div>
       <div>
-        <div class="title" id="tvTitle">WULING</div>
+        <div class="title">WULING ARISTA LAMPUNG</div>
         <div class="subtitle" id="tvSubtitle">APPOINTMENT CONTROL BOARD</div>
       </div>
     </div>
@@ -253,116 +187,56 @@ tbody tr:hover { background-color: rgba(255,255,255,0.15); }
   </div>
 
   <div class="tableWrap">
-    <div id="tableScroll">
-      <table>
-        <thead>
-          <tr><th>Jam</th><th>Customer</th><th>No Polisi</th><th>Kendaraan</th><th>SA</th><th>Jenis Service</th><th>Status</th></tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
-    </div>
+  <div id="tableScroll">
+  <table>
+  <thead>
+  <tr><th>Jam</th><th>Customer</th><th>No Polisi</th><th>Kendaraan</th><th>SA</th><th>Jenis Service</th><th>Status</th></tr>
+  </thead>
+  <tbody id="tbody"></tbody>
+  </table>
+  </div>
   </div>
 
-  <div class="marquee"><div class="track" id="runningTrack"></div></div>
+    <div class="marquee"><div class="track" id="runningTrack"></div></div>
+    <div onclick="bukaMusikOverlay()" style="position:fixed; top:0; right:0; width:80px; height:80px; z-index:99999; cursor:pointer; opacity:0;"></div>
+</div>
 
 </div>
 
+</div>
+
+<!-- Fitur tersembunyi: YouTube Music player -->
+<div id="ytOverlay" style="display:none; position:fixed; inset:0; background:#000; z-index:999999; flex-direction:column;">
+  <iframe id="ytFrame" style="width:100%; height:100%; border:0; flex:1;" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+  <button onclick="kembaliDashboardDariMusik()" style="position:fixed; top:20px; right:20px; background:#d71920; color:white; border:0; padding:14px 22px; border-radius:12px; font-weight:900; font-size:15px; cursor:pointer; z-index:2; box-shadow:0 8px 20px rgba(0,0,0,.4);">⬅️ Kembali ke Dashboard</button>
+</div>
+
 <script>
-// ============================================================
-// KONFIGURASI PUSAT
-// ============================================================
-const CONFIG_URL = 'https://raw.githubusercontent.com/WulingArista/dealer-config/main/config.json';
-
-// ============================================================
-// INISIALISASI — Baca kode dealer dari URL ?dealer=
-// ============================================================
-let scriptUrl = '';
-let namaDealer = '';
-
-(function init() {
-  const params     = new URLSearchParams(window.location.search);
-  const kodeDealer = (params.get('dealer') || '').toUpperCase().trim();
-
-  if (!kodeDealer) {
-    tampilkanError('TIDAK ADA');
-    return;
-  }
-
-  document.getElementById('loading-text').textContent = 'Memuat konfigurasi...';
-
-  fetch(CONFIG_URL + '?t=' + Date.now())
-    .then(function(res) {
-      if (!res.ok) throw new Error('Gagal fetch config');
-      return res.json();
-    })
-    .then(function(config) {
-      const dealer = config[kodeDealer];
-
-      if (!dealer || !dealer.gasUrl) {
-        tampilkanError(kodeDealer);
-        return;
-      }
-
-      // Set konfigurasi dealer
-      scriptUrl  = dealer.gasUrl;
-      namaDealer = dealer.nama || kodeDealer;
-
-      // Update tampilan header
-      document.getElementById('tvTitle').textContent = namaDealer.toUpperCase();
-      if (dealer.logo) document.getElementById('logoWuling').src = dealer.logo;
-      document.title = 'Dashboard TV - ' + namaDealer;
-      document.getElementById('loading-text').textContent = 'Memuat data ' + namaDealer + '...';
-
-      // Tampilkan dashboard
-      document.getElementById('tv-wrapper').style.display = 'flex';
-
-      // Mulai semua sistem
-      applyRotation();
-      setInterval(updateClock, 1000);
-      setInterval(loadData, 15000);
-      requestAnimationFrame(autoScrollLoop);
-      updateClock();
-      loadData();
-
-      // Sembunyikan loading
-      setTimeout(function() {
-        var loader = document.getElementById('layar-loading');
-        if (loader) { loader.style.opacity = '0'; setTimeout(function() { loader.style.display = 'none'; }, 500); }
-      }, 800);
-    })
-    .catch(function(err) {
-      console.error('Config error:', err);
-      tampilkanError(kodeDealer);
-    });
-})();
-
-function tampilkanError(kode) {
-  document.getElementById('layar-loading').style.display = 'none';
-  document.getElementById('error-kode').textContent = 'Kode: ' + kode;
-  document.getElementById('layar-error').style.display = 'flex';
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(err => console.error(err));
 }
 
-// ============================================================
-// SISTEM SMART ROTATE
-// ============================================================
-let currentRotateState = parseInt(localStorage.getItem('tvRotateState')) || 0;
+// ==============================================
+// SISTEM SMART ROTATE (AUTO & MANUAL)
+// ==============================================
+let currentRotateState = parseInt(localStorage.getItem('tvRotateState')) || 0; 
 
 function applyRotation() {
   const wrapper = document.getElementById('tv-wrapper');
   if (window.innerHeight > window.innerWidth) {
-    wrapper.style.width = '100vw'; wrapper.style.height = '100vh';
-    wrapper.style.transform = 'rotate(0deg)'; wrapper.classList.remove('is-portrait');
-    return;
+     wrapper.style.width = '100vw'; wrapper.style.height = '100vh';
+     wrapper.style.transform = 'rotate(0deg)'; wrapper.classList.remove('is-portrait');
+     return; 
   }
   if (currentRotateState === 1) {
-    wrapper.style.width = '100vh'; wrapper.style.height = '100vw';
-    wrapper.style.transform = 'rotate(90deg)'; wrapper.classList.add('is-portrait');
+     wrapper.style.width = '100vh'; wrapper.style.height = '100vw';
+     wrapper.style.transform = 'rotate(90deg)'; wrapper.classList.add('is-portrait');
   } else if (currentRotateState === 2) {
-    wrapper.style.width = '100vh'; wrapper.style.height = '100vw';
-    wrapper.style.transform = 'rotate(-90deg)'; wrapper.classList.add('is-portrait');
+     wrapper.style.width = '100vh'; wrapper.style.height = '100vw';
+     wrapper.style.transform = 'rotate(-90deg)'; wrapper.classList.add('is-portrait');
   } else {
-    wrapper.style.width = '100vw'; wrapper.style.height = '100vh';
-    wrapper.style.transform = 'rotate(0deg)'; wrapper.classList.remove('is-portrait');
+     wrapper.style.width = '100vw'; wrapper.style.height = '100vh';
+     wrapper.style.transform = 'rotate(0deg)'; wrapper.classList.remove('is-portrait');
   }
 }
 
@@ -373,112 +247,140 @@ function rotateScreen() {
 }
 window.addEventListener('resize', applyRotation);
 
-// ============================================================
-// SISTEM DATA & LOGIC TV
-// ============================================================
-let lastIds = [];
-let isViewingBesok = false;
-let fetchCounter = 0;
-let memoriHariIni = [];
-let memoriBesok   = [];
+const YT_SEED_VIDEO_ID = 'jfKfPfyJRdk'; // ganti sesuai selera
+let ytMusicStarted = false;
 
-function esc(v) {
-  return String(v == null ? '' : v)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+function bukaMusikOverlay() {
+  const overlay = document.getElementById('ytOverlay');
+  const frame = document.getElementById('ytFrame');
+  if (!ytMusicStarted) {
+    frame.src = 'https://www.youtube.com/embed/' + YT_SEED_VIDEO_ID +
+      '?autoplay=1&controls=1&rel=0';
+    ytMusicStarted = true;
+  }
+  overlay.style.display = 'flex';
 }
 
-function updateClock() {
-  const n = new Date();
-  document.getElementById('jam').innerText    = n.toLocaleTimeString('id-ID');
-  document.getElementById('tanggal').innerText = n.toLocaleDateString('id-ID', {
-    weekday:'long', day:'2-digit', month:'long', year:'numeric'
-  });
+function kembaliDashboardDariMusik() {
+  document.getElementById('ytOverlay').style.display = 'none';
+}
+
+// ==============================================
+// SISTEM DATA & LOGIC TV (MEMORI INSTAN)
+// ==============================================
+let lastIds = [];
+let isViewingBesok = false; 
+let fetchCounter = 0; 
+
+// MENYIMPAN DATA DI RAM AGAR KLIK JADI INSTAN
+let memoriHariIni = [];
+let memoriBesok = [];
+
+const scriptUrl = 'https://script.google.com/macros/s/AKfycbwQsPc_NAorLHptiN_v7NSID0IDl6qUwpS_N0a7Ld5xFCxVRfj0c8qZ_FByB3rqibzcCg/exec'; 
+
+function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
+
+function updateClock(){
+  const n = new Date(); document.getElementById('jam').innerText = n.toLocaleTimeString('id-ID');
+  document.getElementById('tanggal').innerText = n.toLocaleDateString('id-ID',{ weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+}
+
+function getBesokKey(){ 
+  const d = new Date(); d.setDate(d.getDate() + 1); 
+  const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, '0'); const dd = String(d.getDate()).padStart(2, '0'); 
+  return y + '-' + m + '-' + dd; 
 }
 
 function toggleBesok() {
   isViewingBesok = !isViewingBesok;
-  const btn      = document.getElementById('btnBesok');
+  const btn = document.getElementById('btnBesok');
   const subtitle = document.getElementById('tvSubtitle');
-
+  
   if (isViewingBesok) {
-    btn.innerHTML = '⬅️ Kembali ke Hari Ini';
-    btn.style.background = '#3b82f6'; btn.style.color = '#fff';
-    subtitle.innerHTML = 'PREVIEW BOOKING H-1 (BESOK)';
-    subtitle.style.color = '#fde047';
+     btn.innerHTML = '⬅️ Kembali ke Hari Ini';
+     btn.style.background = '#3b82f6'; btn.style.color = '#fff';
+     subtitle.innerHTML = 'PREVIEW BOOKING H-1 (BESOK)'; subtitle.style.color = '#fde047'; 
   } else {
-    btn.innerHTML = '📅 Preview Besok';
-    btn.style.background = '#f59e0b'; btn.style.color = '#111';
-    subtitle.innerHTML = 'APPOINTMENT CONTROL BOARD';
-    subtitle.style.color = 'inherit';
+     btn.innerHTML = '📅 Preview Besok';
+     btn.style.background = '#f59e0b'; btn.style.color = '#111';
+     subtitle.innerHTML = 'APPOINTMENT CONTROL BOARD'; subtitle.style.color = 'inherit';
   }
-
+  
   exactScroll = 0;
   const el = document.getElementById('tableScroll');
-  if (el) el.scrollTop = 0;
+  if(el) el.scrollTop = 0;
+  
+  // LANGSUNG TAMPILKAN DARI MEMORI TANPA LOADING!
   renderLayar();
 }
 
 function loadData() {
-  if (!scriptUrl) return;
   fetchCounter++;
-  var currentReq = fetchCounter;
-  var urlAll     = scriptUrl + '?action=get_tv_all';
+  let currentReq = fetchCounter;
 
+  const urlAll = scriptUrl + '?action=get_tv_all';
+
+  // WAJIB ADA { method: 'GET', redirect: 'follow' } UNTUK GOOGLE APPS SCRIPT
   fetch(urlAll, { method: 'GET', redirect: 'follow' })
-    .then(function(r) { return r.text(); })
-    .then(function(text) {
-      try { return JSON.parse(text); }
-      catch(e) { throw new Error('Respon bukan JSON'); }
+    .then(r => r.text()) 
+    .then(text => {
+      try {
+        // Coba jadikan JSON
+        return JSON.parse(text);
+      } catch(e) {
+        // Jika gagal (biasanya karena belum Deploy versi baru), tampilkan peringatan
+        console.error("Gagal membaca JSON. Sepertinya Google Apps Script belum di-Deploy Versi Baru!");
+        throw new Error("Respon bukan JSON");
+      }
     })
-    .then(function(res) {
+    .then(res => {
       if (currentReq !== fetchCounter) return;
+
       memoriHariIni = res.hariIni || [];
-      memoriBesok   = res.besok   || [];
+      memoriBesok = res.besok || [];
+
+      console.log("Data Berhasil Dimuat Sekaligus!");
       renderLayar();
     })
-    .catch(function(err) {
-      console.error('Data gagal dimuat:', err);
+    .catch(err => {
+      console.error('Data gagal dimuat, mencoba lagi...', err);
       setTimeout(loadData, 5000);
     });
 }
 
 function renderLayar() {
-  var list = isViewingBesok ? memoriBesok : memoriHariIni;
+  // Pilih memori mana yang sedang ingin dilihat
+  const list = isViewingBesok ? memoriBesok : memoriHariIni;
 
-  document.getElementById('total').innerText   = list.length;
-  document.getElementById('cancel').innerText  = list.filter(function(r){ return String(r.status).toUpperCase() === 'CANCEL'; }).length;
-  document.getElementById('noshow').innerText  = list.filter(function(r){ return String(r.status).toUpperCase() === 'NO SHOW'; }).length;
-  document.getElementById('checkin').innerText = list.filter(function(r){ return String(r.status).toUpperCase() === 'CHECK IN'; }).length;
-  document.getElementById('proses').innerText  = list.filter(function(r){ return String(r.status).toUpperCase() === 'PROSES'; }).length;
-  document.getElementById('selesai').innerText = list.filter(function(r){ return String(r.status).toUpperCase() === 'SELESAI'; }).length;
-  document.getElementById('closed').innerText  = list.filter(function(r){ return String(r.status).toUpperCase() === 'CLOSED'; }).length;
+  document.getElementById('total').innerText = list.length;
+  document.getElementById('cancel').innerText = list.filter(r => String(r.status).toUpperCase() === 'CANCEL').length;
+  document.getElementById('noshow').innerText = list.filter(r => String(r.status).toUpperCase() === 'NO SHOW').length;
+  document.getElementById('checkin').innerText = list.filter(r => String(r.status).toUpperCase() === 'CHECK IN').length;
+  document.getElementById('proses').innerText = list.filter(r => String(r.status).toUpperCase() === 'PROSES').length;
+  document.getElementById('selesai').innerText = list.filter(r => String(r.status).toUpperCase() === 'SELESAI').length;
+  document.getElementById('closed').innerText = list.filter(r => String(r.status).toUpperCase() === 'CLOSED').length;
 
-  var tbody = document.getElementById('tbody');
-  tbody.innerHTML = '';
-  var ids = []; var run = [];
+  const tbody = document.getElementById('tbody'); tbody.innerHTML='';
+  let ids = []; let run = [];
 
-  if (!list.length) {
+  if(!list.length){
     tbody.innerHTML = '<tr><td colspan="7" class="empty">Belum ada appointment ' + (isViewingBesok ? 'untuk besok.' : 'hari ini.') + '</td></tr>';
-    document.getElementById('runningTrack').innerHTML = isViewingBesok
-      ? '<span style="color:#fde047">Mode Preview H-1 Aktif</span><span style="color:#fde047">Mode Preview H-1 Aktif</span>'
-      : '<span>Belum ada appointment hari ini</span><span>Belum ada appointment hari ini</span>';
+    if(!isViewingBesok) { document.getElementById('runningTrack').innerHTML = '<span>Belum ada appointment hari ini</span><span>Belum ada appointment hari ini</span>'; } 
+    else { document.getElementById('runningTrack').innerHTML = '<span style="color:#fde047">Mode Preview H-1 Aktif</span><span style="color:#fde047">Mode Preview H-1 Aktif</span>'; }
     return;
   }
 
-  list.forEach(function(r) {
-    var rawStatus = String(r.status || '').toUpperCase();
-    var id        = (r.id || '') + r.nama + r.jam;
+  list.forEach(r=>{
+    const rawStatus = String(r.status || '').toUpperCase();
+    const id = (r.id || '') + r.nama + r.jam;
     ids.push(id);
 
-    if (!['CANCEL','NO SHOW','SELESAI','CLOSED'].includes(rawStatus)) {
-      run.push(esc(r.nama) + ' (' + esc(r.nopol) + ') - ' + esc(r.jam));
-    }
+    if(!['CANCEL', 'NO SHOW', 'SELESAI', 'CLOSED'].includes(rawStatus)){ run.push(esc(r.nama) + ' (' + esc(r.nopol) + ') - ' + esc(r.jam)); }
 
-    var cls         = rawStatus.replace(/\s+/g,'.');
-    var isBatal     = ['CANCEL','NO SHOW'].includes(rawStatus);
-    var opacityStyle = isBatal ? 'opacity: 0.4;' : '';
-    var newRowStyle  = (!isViewingBesok && !lastIds.includes(id)) ? 'newRow' : '';
+    const cls = rawStatus.replace(/\s+/g,'.');
+    const isBatal = ['CANCEL', 'NO SHOW'].includes(rawStatus);
+    const opacityStyle = isBatal ? 'opacity: 0.4;' : '';
+    const newRowStyle = (!isViewingBesok && !lastIds.includes(id)) ? 'newRow' : '';
 
     tbody.innerHTML +=
       '<tr class="' + newRowStyle + '" style="' + opacityStyle + '">' +
@@ -487,55 +389,57 @@ function renderLayar() {
       '<td><span class="status ' + esc(cls) + '">' + esc(r.status) + '</span></td></tr>';
   });
 
-  if (!isViewingBesok) {
-    var text = run.length > 0 ? run.join('  •  ') : 'Semua kendaraan selesai diproses atau dibatalkan.';
-    document.getElementById('runningTrack').innerHTML = '<span>' + text + '</span><span>' + text + '</span>';
-    lastIds = ids;
+  if(!isViewingBesok) {
+     const text = run.length > 0 ? run.join('  •  ') : 'Semua kendaraan selesai diproses atau dibatalkan.';
+     document.getElementById('runningTrack').innerHTML = '<span>' + text + '</span><span>' + text + '</span>';
+     lastIds = ids;
   } else {
-    document.getElementById('runningTrack').innerHTML = '<span style="color:#fde047">🛠️ MODE PREVIEW H-1 (BESOK) AKTIF 🛠️</span><span style="color:#fde047">🛠️ MODE PREVIEW H-1 (BESOK) AKTIF 🛠️</span>';
+     document.getElementById('runningTrack').innerHTML = '<span style="color:#fde047">🛠️ MODE PREVIEW H-1 (BESOK) AKTIF 🛠️</span><span style="color:#fde047">🛠️ MODE PREVIEW H-1 (BESOK) AKTIF 🛠️</span>';
   }
 }
 
-// ============================================================
-// AUTO SCROLL ENGINE
-// ============================================================
-var isPaused = false; var scrollDirection = 'down'; var exactScroll = 0; var touchTimeout = null;
+// ENGINE AUTOMATIC & MANUAL SMART SCROLL
+let isPaused = false; let scrollDirection = "down"; let exactScroll = 0; let touchTimeout = null;
 
 function pauseScrollForManual() {
   isPaused = true; clearTimeout(touchTimeout);
-  touchTimeout = setTimeout(function() {
-    isPaused = false;
-    var el = document.getElementById('tableScroll');
-    if (el) exactScroll = el.scrollTop;
-  }, 4000);
+  touchTimeout = setTimeout(() => { isPaused = false; const el = document.getElementById('tableScroll'); if (el) exactScroll = el.scrollTop; }, 4000); 
 }
 
-function autoScrollLoop() {
+function autoScrollLoop(){
   if (!isPaused) {
-    var el = document.getElementById('tableScroll');
-    if (el) {
-      var max = el.scrollHeight - el.clientHeight;
-      if (max > 0) {
+    const el = document.getElementById('tableScroll');
+    if(el) {
+      const max = el.scrollHeight - el.clientHeight;
+      if(max > 0) {
         if (el.scrollTop === 0 && exactScroll > 1) exactScroll = 0;
-        if (scrollDirection === 'down') {
-          exactScroll += 0.3; el.scrollTop = exactScroll;
-          if (el.scrollTop >= max - 2) { isPaused = true; scrollDirection = 'up'; setTimeout(function(){ isPaused = false; }, 1500); }
-        } else if (scrollDirection === 'up') {
-          exactScroll -= 4; el.scrollTop = exactScroll;
-          if (el.scrollTop <= 0) { exactScroll = 0; el.scrollTop = 0; isPaused = true; scrollDirection = 'down'; setTimeout(function(){ isPaused = false; }, 3000); }
+        if (scrollDirection === "down") {
+          exactScroll += 0.3; el.scrollTop = exactScroll; 
+          if(el.scrollTop >= max - 2){ isPaused = true; scrollDirection = "up"; setTimeout(() => { isPaused = false; }, 1500); }
+        } else if (scrollDirection === "up") {
+          exactScroll -= 4; el.scrollTop = exactScroll; 
+          if(el.scrollTop <= 0) { exactScroll = 0; el.scrollTop = 0; isPaused = true; scrollDirection = "down"; setTimeout(() => { isPaused = false; }, 3000); }
         }
       }
     }
   }
-  requestAnimationFrame(autoScrollLoop);
+  requestAnimationFrame(autoScrollLoop); 
 }
 
-var tableEl = document.getElementById('tableScroll');
+const tableEl = document.getElementById('tableScroll');
 if (tableEl) {
   tableEl.addEventListener('touchstart', pauseScrollForManual, {passive: true});
-  tableEl.addEventListener('touchmove',  pauseScrollForManual, {passive: true});
-  tableEl.addEventListener('wheel',      pauseScrollForManual, {passive: true});
+  tableEl.addEventListener('touchmove', pauseScrollForManual, {passive: true});
+  tableEl.addEventListener('wheel', pauseScrollForManual, {passive: true});
 }
+
+applyRotation();
+setInterval(updateClock,1000);
+setInterval(loadData,15000); // Otomatis refresh data di memori setiap 15 detik
+requestAnimationFrame(autoScrollLoop);
+
+updateClock();
+loadData(); // Memulai tarikan data pertama
 </script>
 </body>
 </html>
