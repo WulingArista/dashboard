@@ -1,4 +1,4 @@
-const CACHE = 'wuling-dashboard-v2'; // Versi dinaikkan menjadi v2 agar otomatis memperbarui cache lama
+const CACHE = 'wuling-dashboard-v1';
 const FILES = ['./','./index.html','./manifest.json','./icon-192x192.png','./icon-512x512.png'];
 
 self.addEventListener('install', e => {
@@ -14,14 +14,6 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // Pengecualian: Abaikan request ke server luar
-  if (e.request.url.includes('youtube.com') || 
-      e.request.url.includes('youtube-nocookie.com') ||
-      e.request.url.includes('script.google.com')) {
-    return; // Berhenti di sini, biarkan browser menangani koneksi secara normal
-  }
-
-  // Logika cache asli Anda untuk file lokal
   e.respondWith(
     fetch(e.request).catch(() => caches.match(e.request))
   );
