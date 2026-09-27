@@ -258,11 +258,12 @@ window.addEventListener('resize', applyRotation);
 
 
 // ==============================================
-// SISTEM BACKGROUND MUSIC (YOUTUBE NO-COOKIE AUTO SEARCH)
+// SISTEM BACKGROUND MUSIC (YOUTUBE NO-COOKIE - SHUFFLE PLAYLIST BESAR)
 // ==============================================
 
-// Masukkan kata kunci lagu yang Anda inginkan
-const KATA_KUNCI_MUSIK = "lagu akustik cafe indonesia santai"; 
+// Gunakan Playlist Publik yang isinya ratusan/ribuan lagu 
+// Contoh di bawah adalah playlist "Cafe Vibes / Akustik Indonesia"
+const PLAYLIST_BESAR = 'PLMIb08J7E2X4H9F2NlKq7P_1BwtXW2Z9b'; 
 
 let player;
 let isPlayerReady = false;
@@ -274,15 +275,15 @@ tag.src = "https://www.youtube.com/iframe_api";
 const firstScriptTag = document.getElementsByTagName('script')[0];
 firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
-// 2. Fungsi bawaan YouTube (Diubah menggunakan mode 'search')
+// 2. Fungsi bawaan YouTube
 function onYouTubeIframeAPIReady() {
     player = new YT.Player('ytplayer', {
         height: '0', 
         width: '0',  
         host: 'https://www.youtube-nocookie.com',
         playerVars: {
-            'listType': 'search',         // Mengubah mode menjadi pencarian
-            'list': KATA_KUNCI_MUSIK,     // Memasukkan kata kunci pencarian
+            'listType': 'playlist',       // KEMBALI GUNAKAN PLAYLIST AGAR STABIL
+            'list': PLAYLIST_BESAR,       
             'autoplay': 0, 
             'controls': 0, 
             'disablekb': 1
@@ -294,14 +295,15 @@ function onYouTubeIframeAPIReady() {
     });
 }
 
-// 3. Saat Player Siap, aktifkan mode Acak (Shuffle)
+// 3. Fungsi saat Player Siap 
 function onPlayerReady(event) {
     isPlayerReady = true;
+    console.log("Musik Siap!");
     
-    // Memberikan delay sedikit agar YouTube selesai memuat hasil pencarian
+    // Beri jeda 1,5 detik agar YouTube memuat seluruh daftar lagunya, lalu aktifkan mode ACAK
     setTimeout(() => {
         player.setShuffle(true); 
-    }, 1000);
+    }, 1500);
 }
 
 // 4. Monitor Status Musik
@@ -330,7 +332,6 @@ function laguSelanjutnya() {
         if (!isPlaying) player.playVideo();
     }
 }
-
 // ==============================================
 // SISTEM DATA & LOGIC TV (MEMORI INSTAN)
 // ==============================================
