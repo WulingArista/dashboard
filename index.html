@@ -247,22 +247,59 @@ function rotateScreen() {
 }
 window.addEventListener('resize', applyRotation);
 
-const YT_SEED_VIDEO_ID = 'PLkbaG37V-vG8Fib_qvgOKf3qzqA0SUk59'; // ganti sesuai selera
+const PLAYLIST_ID = 'PLkbaG37V-vG8Fib_qvgOKf3qzqA0SUk59'; 
 let ytMusicStarted = false;
+let player; // Variabel untuk menyimpan sistem YouTube API
 
-function bukaMusikOverlay() {
-  const overlay = document.getElementById('ytOverlay');
-  const frame = document.getElementById('ytFrame');
-  if (!ytMusicStarted) {
-    frame.src = 'https://www.youtube-nocookie.com/embed/' + YT_SEED_VIDEO_ID +
-      '?autoplay=1&controls=1&rel=0';
-    ytMusicStarted = true;
-  }
-  overlay.style.display = 'flex';
+// 1. Memuat script YouTube API secara dinamis
+const tag = document.createElement('script');
+tag.src = "https://www.youtube.com/iframe_api";
+const firstScriptTag = document.getElementsByTagName('script')[0];
+firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+// 2. Fungsi bawaan YouTube saat API sudah siap
+function onYouTubeIframeAPIReady() {
+    player = new YT.Player('ytplayer', {
+        height: '315', // Tinggi video (Ubah jadi '0' jika ingin video disembunyikan)
+        width: '560',  // Lebar video (Ubah jadi '0' jika ingin video disembunyikan)
+        playerVars: {
+            'listType': 'playlist',  
+            'list': PLAYLIST_ID,     
+            'autoplay': 0, // Jangan autoplay di awal untuk mencegah pemblokiran browser
+            'controls': 1, // Tampilkan kontrol YouTube (ubah '0' jika tidak ingin terlihat)
+            'rel': 0
+        }
+    });
 }
 
+// 3. Fungsi Buka Overlay Anda (Dimodifikasi)
+function bukaMusikOverlay() {
+    const overlay = document.getElementById('ytOverlay');
+    overlay.style.display = 'flex';
+
+    // Jika musik belum pernah dimulai, kita otomatis putar saat overlay dibuka
+    if (!ytMusicStarted && player && player.playVideo) {
+        player.playVideo(); // Memulai musik menggunakan API
+        ytMusicStarted = true;
+    }
+}
+
+// 4. Fungsi Tutup Overlay Anda (Tetap sama)
 function kembaliDashboardDariMusik() {
-  document.getElementById('ytOverlay').style.display = 'none';
+    document.getElementById('ytOverlay').style.display = 'none';
+}
+
+// 5. Fungsi Tombol Kontrol
+function mulaiMusik() {
+    if(player && player.playVideo) player.playVideo();
+}
+
+function jedaMusik() {
+    if(player && player.pauseVideo) player.pauseVideo();
+}
+
+function laguSelanjutnya() {
+    if(player && player.nextVideo) player.nextVideo();
 }
 
 // ==============================================
