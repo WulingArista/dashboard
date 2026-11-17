@@ -196,6 +196,31 @@ tbody tr:hover { background-color: rgba(255,255,255,0.15); }
   .track span { font-size: 11px; }
   #btnBesok, #btnRotate { padding: 4px 10px; font-size: 11px; }
 }
+/* ---------- ANTRIAN & PANGGILAN ---------- */
+.antrianBar{ display:none; flex-shrink:0; flex-wrap:wrap; align-items:center; gap:10px 26px; margin:0 25px 12px 25px; padding:10px 16px; background:rgba(255,255,255,.06); border-radius:14px; }
+.aqGroup{ display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+.aqLabel{ font-size:12px; font-weight:800; letter-spacing:1.5px; opacity:.75; }
+.aqIsi{ display:inline-flex; flex-wrap:wrap; gap:6px; }
+.aqChip{ display:inline-block; padding:5px 14px; border-radius:999px; font-size:20px; font-weight:900; }
+.aqChip.menunggu{ background:#fde68a; color:#111; }
+.aqChip.dipanggil{ background:#2563eb; color:#fff; animation:aqKedip 1.2s ease-in-out infinite; }
+.aqChip.dilayani{ background:#7c3aed; color:#fff; }
+.aqChip.lagi{ background:transparent; border:1px solid #64748b; color:#cbd5e1; font-size:16px; }
+@keyframes aqKedip{ 0%,100%{opacity:1} 50%{opacity:.55} }
+
+.aqOverlay{ display:none; position:absolute; inset:0; z-index:60; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:4vmin; background:linear-gradient(135deg,#d71920,#7f0000); color:#fff; }
+.aqOvKecil{ font-size:5vmin; font-weight:800; letter-spacing:.8vmin; opacity:.9; }
+.aqOvNomor{ font-size:30vmin; font-weight:900; line-height:1; margin:2vmin 0; animation:aqKedip 1s ease-in-out infinite; text-shadow:0 0 4vmin rgba(255,255,255,.35); }
+.aqOvPlat{ font-size:9vmin; font-weight:800; letter-spacing:.8vmin; }
+.aqOvSa{ font-size:5.5vmin; font-weight:700; margin-top:3vmin; }
+
+#btnSuara{ background:#475569; color:#fff; border:none; padding:6px 14px; border-radius:8px; font-weight:900; cursor:pointer; font-size:13px; transition:all .2s; box-shadow:0 4px 10px rgba(0,0,0,.3); }
+#btnSuara.on{ background:#16a34a; }
+
+@media screen and (orientation: portrait){ .antrianBar{ margin:0 10px 8px 10px; padding:8px 10px; } .aqChip{ font-size:15px; padding:4px 10px; } }
+.is-portrait .antrianBar{ margin:0 10px 8px 10px; padding:8px 10px; }
+.is-portrait .aqChip{ font-size:15px; padding:4px 10px; }
+@media(max-height: 500px){ .antrianBar{ margin:0 15px 6px 15px; padding:5px 10px; } .aqChip{ font-size:12px; padding:2px 8px; } #btnSuara{ padding:4px 10px; font-size:11px; } }
 </style>
 </head>
 <body>
@@ -234,6 +259,7 @@ tbody tr:hover { background-color: rgba(255,255,255,0.15); }
       <div class="action-btns">
         <button id="btnRotate" onclick="rotateScreen()">🔄 Rotate</button>
         <button id="btnBesok" onclick="toggleBesok()">📅 Preview Besok</button>
+        <button id="btnSuara" onclick="aktifkanSuara()">🔇 Aktifkan Suara</button>
       </div>
       <div class="time-texts">
         <div id="tanggal"></div>
@@ -252,6 +278,12 @@ tbody tr:hover { background-color: rgba(255,255,255,0.15); }
     <div class="card"><h2 id="closed">0</h2> Closed</div>
   </div>
 
+  <div id="antrianBar" class="antrianBar">
+    <div class="aqGroup" id="aqGrpPanggil"><span class="aqLabel">DIPANGGIL</span><span id="aqIsiPanggil" class="aqIsi"></span></div>
+    <div class="aqGroup" id="aqGrpTunggu"><span class="aqLabel">MENUNGGU</span><span id="aqIsiTunggu" class="aqIsi"></span></div>
+    <div class="aqGroup" id="aqGrpLayani"><span class="aqLabel">DILAYANI</span><span id="aqIsiLayani" class="aqIsi"></span></div>
+  </div>
+
   <div class="tableWrap">
     <div id="tableScroll">
       <table>
@@ -263,7 +295,14 @@ tbody tr:hover { background-color: rgba(255,255,255,0.15); }
     </div>
   </div>
 
-  <div class="marquee"><div class="track" id="runningTrack"></div></div>
+    <div class="marquee"><div class="track" id="runningTrack"></div></div>
+
+    <div id="aqOverlay" class="aqOverlay">
+      <div class="aqOvKecil">NOMOR ANTRIAN</div>
+      <div class="aqOvNomor" id="aqOvNomor"></div>
+      <div class="aqOvPlat" id="aqOvPlat"></div>
+      <div class="aqOvSa" id="aqOvSa"></div>
+    </div>
 
 </div>
 
@@ -323,6 +362,7 @@ let namaDealer = '';
       requestAnimationFrame(autoScrollLoop);
       updateClock();
       loadData();
+      muatAntrianTv();
 
       // Sembunyikan loading
       setTimeout(function() {
@@ -536,6 +576,182 @@ if (tableEl) {
   tableEl.addEventListener('touchmove',  pauseScrollForManual, {passive: true});
   tableEl.addEventListener('wheel',      pauseScrollForManual, {passive: true});
 }
+// ==============================================
+// ANTRIAN & PANGGILAN (dari satpam dan admin)
+// ==============================================
+var aqBaseline = false;
+var aqTerakhirTs = 0;
+var aqAntrian = [];
+var aqSedangTampil = false;
+var suaraAktif = false;
+var audioCtx = null;
+
+function namaDepanAq(s) { return String(s || '').trim().split(/\s+/)[0] || ''; }
+function titleAq(s) { s = String(s || ''); return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : ''; }
+
+function setGrupAq(idGrup, idIsi, list, kelas, denganSa, maks) {
+  var grup = document.getElementById(idGrup);
+  if (!list.length) { grup.style.display = 'none'; return; }
+  grup.style.display = 'flex';
+  var h = '';
+  list.slice(0, maks).forEach(function(a) {
+    h += '<span class="aqChip ' + kelas + '">' + esc(a.nomor) + (denganSa && a.sa ? ' ➜ ' + esc(titleAq(namaDepanAq(a.sa))) : '') + '</span>';
+  });
+  if (list.length > maks) h += '<span class="aqChip lagi">+' + (list.length - maks) + '</span>';
+  document.getElementById(idIsi).innerHTML = h;
+}
+
+function renderAntrianTv(items) {
+  var g = { DIPANGGIL: [], MENUNGGU: [], DILAYANI: [] };
+  items.forEach(function(a) { if (g[a.status]) g[a.status].push(a); });
+  var bar = document.getElementById('antrianBar');
+  if (!g.DIPANGGIL.length && !g.MENUNGGU.length && !g.DILAYANI.length) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  setGrupAq('aqGrpPanggil', 'aqIsiPanggil', g.DIPANGGIL, 'dipanggil', true, 6);
+  setGrupAq('aqGrpTunggu', 'aqIsiTunggu', g.MENUNGGU, 'menunggu', false, 8);
+  setGrupAq('aqGrpLayani', 'aqIsiLayani', g.DILAYANI, 'dilayani', false, 6);
+}
+
+// ---------- suara ----------
+function bunyiAq() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    [880, 660].forEach(function(f, i) {
+      var o = audioCtx.createOscillator();
+      var g = audioCtx.createGain();
+      o.type = 'sine';
+      o.frequency.value = f;
+      var t = audioCtx.currentTime + i * 0.35;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.4, t + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.33);
+      o.connect(g);
+      g.connect(audioCtx.destination);
+      o.start(t);
+      o.stop(t + 0.35);
+    });
+  } catch (e) {}
+}
+
+function aktifkanSuara() {
+  var btn = document.getElementById('btnSuara');
+  if (suaraAktif) {
+    suaraAktif = false;
+    try { window.speechSynthesis.cancel(); } catch (e) {}
+    btn.textContent = '🔇 Aktifkan Suara';
+    btn.className = '';
+    return;
+  }
+  suaraAktif = true;
+  btn.textContent = '🔊 Suara Aktif';
+  btn.className = 'on';
+  bunyiAq();
+  try {
+    var u = new SpeechSynthesisUtterance('Suara antrian aktif');
+    u.lang = 'id-ID';
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  } catch (e) {}
+}
+
+function ejaPlatAq(plat) {
+  var s = String(plat || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  var grup = s.match(/[A-Z]+|[0-9]+/g) || [];
+  return grup.map(function(g) { return g.split('').join(' '); }).join(', ');
+}
+
+function teksPanggilanAq(p) {
+  var m = String(p.nomor || '').match(/^([A-Z]+)-?0*(\d+)$/i);
+  var nomor = m ? (m[1].toUpperCase() + ' ' + parseInt(m[2], 10)) : String(p.nomor || '');
+  var sa = titleAq(namaDepanAq(p.sa));
+  return 'Nomor antrian ' + nomor + '. Plat nomor ' + ejaPlatAq(p.nopol) + '. ' +
+    (sa ? 'Silakan menuju Service Advisor ' + sa + '.' : 'Silakan menuju meja Service Advisor.');
+}
+
+function ucapkanAq(teks, selesai) {
+  try {
+    var syn = window.speechSynthesis;
+    if (!syn) { selesai(); return; }
+    syn.cancel();
+    var suara = syn.getVoices().filter(function(v) { return String(v.lang).toLowerCase().indexOf('id') === 0; })[0];
+    var buat = function() {
+      var u = new SpeechSynthesisUtterance(teks);
+      u.lang = 'id-ID';
+      u.rate = 0.9;
+      if (suara) u.voice = suara;
+      return u;
+    };
+    var u1 = buat();
+    var u2 = buat();
+    u2.onend = selesai;
+    u2.onerror = selesai;
+    syn.speak(u1);
+    syn.speak(u2);
+  } catch (e) { selesai(); }
+}
+
+// ---------- layar panggilan ----------
+function tampilPanggilanAq(p, kembali) {
+  var ov = document.getElementById('aqOverlay');
+  document.getElementById('aqOvNomor').textContent = p.nomor || '';
+  document.getElementById('aqOvPlat').textContent = p.nopol || '';
+  document.getElementById('aqOvSa').textContent = p.sa ? 'Silakan menuju Service Advisor ' + p.sa : 'Silakan menuju meja Service Advisor';
+  ov.style.display = 'flex';
+  var mulai = Date.now();
+  var beres = false;
+  var akhir = function() {
+    if (beres) return;
+    beres = true;
+    var sisa = Math.max(0, 8000 - (Date.now() - mulai));   // layar tampil minimal 8 detik
+    setTimeout(function() { ov.style.display = 'none'; kembali(); }, sisa);
+  };
+  if (suaraAktif) {
+    bunyiAq();
+    setTimeout(function() { ucapkanAq(teksPanggilanAq(p), akhir); }, 800);
+    setTimeout(akhir, 30000);   // pengaman kalau suara macet
+  } else {
+    setTimeout(akhir, 8000);
+  }
+}
+
+function jalankanPanggilAq() {
+  if (aqSedangTampil || !aqAntrian.length) return;
+  aqSedangTampil = true;
+  var p = aqAntrian.shift();
+  tampilPanggilanAq(p, function() { aqSedangTampil = false; jalankanPanggilAq(); });
+}
+
+function prosesPanggilanAq(list) {
+  var maks = 0;
+  list.forEach(function(p) { if (p.ts > maks) maks = p.ts; });
+  if (!aqBaseline) { aqBaseline = true; aqTerakhirTs = maks; return; }   // pemuatan pertama: jangan bacakan panggilan lama
+  list.slice().sort(function(a, b) { return a.ts - b.ts; }).forEach(function(p) {
+    if (p.ts > aqTerakhirTs) aqAntrian.push(p);
+  });
+  if (maks > aqTerakhirTs) aqTerakhirTs = maks;
+  jalankanPanggilAq();
+}
+
+// ---------- ambil data dari server ----------
+function muatAntrianTv() {
+  var jeda = 10000;
+  fetch(scriptUrl + '?action=get_antrian_tv', { method: 'GET', redirect: 'follow' })
+    .then(function(r) { return r.text(); })
+    .then(function(text) {
+      var res = JSON.parse(text);
+      if (res && !res.error) {
+        var items = res.items || [];
+        renderAntrianTv(items);
+        prosesPanggilanAq(res.panggil || []);
+        jeda = items.length ? 5000 : 15000;
+      }
+    })
+    .catch(function() {})
+    .then(function() { setTimeout(muatAntrianTv, jeda); });
+}
+
+// ENGINE AUTOMATIC & MANUAL SMART SCROLL
 </script>
 </body>
 </html>
